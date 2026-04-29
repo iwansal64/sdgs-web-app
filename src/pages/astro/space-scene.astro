@@ -1,0 +1,305 @@
+<script>
+      import { animate, createTimeline, eases } from "animejs";
+      import * as THREE from "three";
+      import { EffectComposer, GLTFLoader, OrbitControls, OutputPass, RenderPass, ShaderPass, UnrealBloomPass } from "three/examples/jsm/Addons.js";
+
+      async function setupSpaceScene() {
+            // Scene Setup
+            const scene = new THREE.Scene();
+            scene.environment = null;
+            scene.background = new THREE.Color(0x000000);
+            scene.environmentIntensity = 0.3;
+
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 0, 4);
+
+            const canvas = document.getElementById("space-scene");
+            if (!canvas) {
+                  console.error("Canvas that has `space-scene` ID is not found");
+                  return;
+            }
+
+            const renderer = new THREE.WebGLRenderer({
+                  canvas: canvas,
+                  antialias: true,
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // Add the lightning
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+            // Add the model
+            const loader = new GLTFLoader();
+            const earthGLB = await loader.loadAsync("/models/earth-model.glb");
+
+            const earthModel = earthGLB.scene;
+            earthModel.scale.set(0.01, 0.01, 0.01);
+            earthModel.position.set(0, 0, 0);
+            scene.add(earthModel);
+
+            // Add window resized handler
+            window.addEventListener("resize", () => {
+                  camera.aspect = innerWidth / innerHeight;
+                  camera.updateProjectionMatrix();
+                  renderer.setSize(innerWidth, innerHeight);
+            });
+
+            // Add Sun
+            const sunColor = 0xffee00;
+
+            // Add 3D Sun
+            const sunGeo = new THREE.SphereGeometry(0.2, 14, 14);
+            const sunMat = new THREE.MeshStandardMaterial({
+                  color: sunColor,
+                  emissive: 0xffaa00, // self-glowing color
+                  emissiveIntensity: 1, // how bright the glow is
+                  roughness: 0.4,
+                  metalness: 0,
+                  transparent: true,
+            });
+            const sunModel = new THREE.Mesh(sunGeo, sunMat);
+            sunModel.position.set(-0.85, 2.7, -10);
+
+            // Create Sun Light
+            const sunLight = new THREE.PointLight(0xffffff, 10);
+            sunLight.position.copy(sunModel.position);
+
+            // Create Sun Lens Flare
+            function createGlowTexture() {
+                  const canvas = document.createElement("canvas");
+                  canvas.width = 256;
+                  canvas.height = 256;
+                  const ctx = canvas.getContext("2d");
+                  if (!ctx) return false;
+
+                  const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+                  gradient.addColorStop(0, "rgba(255, 250, 100, 0.1)"); // bright center
+                  gradient.addColorStop(0.1, "rgba(255, 200, 50, 0)");
+                  gradient.addColorStop(0.5, "rgba(255, 150, 20, 0)");
+                  gradient.addColorStop(1, "rgba(255, 50,  0,  0)"); // transparent edge
+
+                  ctx.fillStyle = gradient;
+                  ctx.fillRect(0, 0, 256, 256);
+
+                  return new THREE.CanvasTexture(canvas);
+            }
+
+            const glowTexture = createGlowTexture();
+            if (!glowTexture) return;
+
+            const glowMat = new THREE.SpriteMaterial({
+                  map: glowTexture,
+                  transparent: true,
+                  blending: THREE.AdditiveBlending,
+                  depthWrite: false,
+            });
+
+            const glowSprite = new THREE.Sprite(glowMat);
+            glowSprite.scale.set(6, 6, 1);
+            glowSprite.position.set(sunModel.position.x, sunModel.position.y, sunModel.position.z + 2);
+            scene.add(glowSprite);
+
+            // Add Bloom Effect
+            const BLOOM_LAYER = 1;
+            const bloomLayer = new THREE.Layers();
+            bloomLayer.set(BLOOM_LAYER);
+
+            const bloomComposer = new EffectComposer(renderer);
+            bloomComposer.addPass(new RenderPass(scene, camera));
+
+            const bloom = new UnrealBloomPass(
+                  new THREE.Vector2(innerWidth, innerHeight),
+                  5, // strength — higher = more blur/glow
+                  1.3, // radius — higher = wider blur spread
+                  0.15, // threshold — lower = more objects affected
+            );
+
+            bloomComposer.addPass(bloom);
+            bloomComposer.addPass(new OutputPass());
+
+            sunModel.layers.enable(BLOOM_LAYER);
+            glowSprite.layers.enable(BLOOM_LAYER);
+            earthModel.layers.disable(BLOOM_LAYER);
+
+            // Hide Non-bloom Objects
+            const darkMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const materialCache = new Map();
+
+            function hidNonBloom() {
+                  scene.traverse((obj) => {
+                        if (obj instanceof THREE.Mesh && !bloomLayer.test(obj.layers)) {
+                              materialCache.set(obj, obj.material);
+                              obj.material = darkMaterial; // hide it
+                        }
+                  });
+            }
+
+            function restoreMaterials() {
+                  materialCache.forEach((material, obj) => {
+                        obj.material = material;
+                  });
+                  materialCache.clear();
+            }
+
+            const mixShader = {
+                  uniforms: {
+                        baseTexture: { value: null },
+                        bloomTexture: { value: bloomComposer.renderTarget2.texture },
+                  },
+                  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+                  fragmentShader: `
+    uniform sampler2D baseTexture;
+    uniform sampler2D bloomTexture;
+    varying vec2 vUv;
+    void main() {
+      gl_FragColor = texture2D(baseTexture, vUv) + texture2D(bloomTexture, vUv);
+    }
+  `,
+            };
+
+            const finalComposer = new EffectComposer(renderer);
+            finalComposer.addPass(new RenderPass(scene, camera));
+
+            const mixPass = new ShaderPass(new THREE.ShaderMaterial(mixShader), "baseTexture");
+            mixPass.needsSwap = true;
+            finalComposer.addPass(mixPass);
+            finalComposer.addPass(new OutputPass());
+
+            scene.add(sunModel);
+
+            // Add Stars
+            function createStarTexture() {
+                  const canvas = document.createElement("canvas");
+                  canvas.width = 64;
+                  canvas.height = 64;
+                  const ctx = canvas.getContext("2d");
+
+                  if (!ctx) return;
+                  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+                  gradient.addColorStop(0, "rgba(255, 255, 255, 0.3)"); // bright center
+                  gradient.addColorStop(0.4, "rgba(255, 255, 255, 0.05)");
+                  gradient.addColorStop(1, "rgba(255, 255, 255, 0)"); // transparent edge
+
+                  ctx.fillStyle = gradient;
+                  ctx.fillRect(0, 0, 64, 64);
+
+                  return new THREE.CanvasTexture(canvas);
+            }
+
+            function createStars(count: number) {
+                  const positions = new Float32Array(count * 3); // x, y, z per star
+
+                  for (let i = 0; i < count * 3; i++) {
+                        positions[i] = (Math.random() - 0.5) * 50; // spread across 2000 units
+                  }
+
+                  const geo = new THREE.BufferGeometry();
+                  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+                  const starTexture = createStarTexture();
+
+                  if (!starTexture) return;
+                  const mat = new THREE.PointsMaterial({
+                        size: Math.random() * 0.25 + 0.1,
+                        map: createStarTexture(), // ← round texture
+                        transparent: true,
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false,
+                        sizeAttenuation: true,
+                  });
+
+                  return new THREE.Points(geo, mat);
+            }
+
+            const stars = createStars(200);
+            if (stars) {
+                  stars.layers.enable(BLOOM_LAYER);
+                  scene.add(stars);
+            }
+
+            // ----------------  Animation loop
+            function sceneAnimationLoop() {
+                  window.requestAnimationFrame(sceneAnimationLoop);
+
+                  renderer.setClearColor(0x000000, 0);
+
+                  // Hide Non-bloom object
+                  hidNonBloom();
+                  bloomComposer.render();
+
+                  // Restore materials
+                  renderer.setClearColor(0x000000, 1);
+                  restoreMaterials();
+                  finalComposer.render();
+            }
+
+            sceneAnimationLoop();
+
+            const idleAnimation = createTimeline().add(earthModel.rotation, {});
+
+            let rotateProps = {
+                  angle: 0,
+            };
+            const startAnimation = createTimeline()
+                  .add(earthModel.rotation, {
+                        y: [0, Math.PI * 4],
+                        ease: "linear",
+                        autoplay: false,
+                        duration: 60000,
+                        loop: true,
+                  })
+                  .add(
+                        earthModel.position,
+                        {
+                              x: [-6, 1],
+                              y: [0, 2, -0.5],
+                              z: [0, -2, 1],
+                              duration: 5000,
+                              ease: eases.inOutElastic(1.2, 1.5),
+                              autoplay: false,
+                        },
+                        "<<",
+                  )
+                  .add(
+                        rotateProps,
+                        {
+                              angle: -Math.PI,
+                              duration: 5000,
+                              ease: eases.inOutElastic(1.2, 1.5),
+                              autoplay: false,
+                              onUpdate: () => {
+                                    earthModel.position.x = Math.cos(rotateProps.angle);
+                                    earthModel.position.y = Math.sin(rotateProps.angle);
+                              },
+                        },
+                        "<<",
+                  );
+
+            setTimeout(() => {
+                  startAnimation.play();
+            }, 2000);
+      }
+
+      await setupSpaceScene();
+</script>
+
+<canvas id="space-scene"></canvas>
+
+<style>
+      canvas {
+            z-index: -100;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+      }
+</style>

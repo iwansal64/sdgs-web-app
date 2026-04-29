@@ -14,9 +14,14 @@
   "dependencies": {
     "@astrojs/svelte": "^8.0.5",
     "@tailwindcss/vite": "^4.2.4",
+    "animejs": "^4.3.6",
     "astro": "^6.1.9",
     "svelte": "^5.55.5",
     "tailwindcss": "^4.2.4",
+    "three": "^0.184.0",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/three": "^0.184.0"
   }
 }

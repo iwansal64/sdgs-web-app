@@ -1,6 +1,10 @@
 ---
 import "../styles/global.css";
+import Navbar from "./svelte/navbar.svelte";
 import Homepage from "./svelte/homepage.svelte";
+import HomepageIsland from "./svelte/homepage-island.svelte";
+import Opening from "./svelte/opening.svelte";
+import SpaceScene from "./astro/space-scene.astro";
 ---
 
 <html lang="en">
@@ -13,6 +17,10 @@ import Homepage from "./svelte/homepage.svelte";
             <title>Astro</title>
       </head>
       <body>
+            <SpaceScene />
+            <Opening client:only />
+            <Navbar />
+            <HomepageIsland client:only />
             <Homepage />
       </body>
 </html>

@@ -1,1 +1,13 @@
-@import "tailwindcss";
+@layer tailwindcss, base;
+
+@layer base {
+      * {
+            color: #eee;
+      }
+
+      body {
+            background-color: #111;
+      }
+}
+
+@import "tailwindcss" layer(tailwindcss);
