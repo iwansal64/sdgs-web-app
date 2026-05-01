@@ -29,14 +29,58 @@
             // Add the lightning
             scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
-            // Add the model
+            // Add the Earth
             const loader = new GLTFLoader();
             const earthGLB = await loader.loadAsync("/models/earth-model.glb");
 
             const earthModel = earthGLB.scene;
             earthModel.scale.set(0.01, 0.01, 0.01);
             earthModel.position.set(0, 0, 0);
-            scene.add(earthModel);
+
+            // Add Earth's Atmosphere
+            const atmosphereGeo = new THREE.SphereGeometry(1.04, 64, 64);
+            const atmosphereMat = new THREE.ShaderMaterial({
+                  vertexShader: `
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+
+    void main() {
+      vNormal   = normalize(normalMatrix * normal);
+      vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+                  fragmentShader: `
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+
+    void main() {
+      // Fresnel — stronger at edges, transparent at center
+      vec3  viewDir = normalize(-vPosition);
+      float fresnel = dot(vNormal, viewDir);
+      float rim     = 1.0 - clamp(fresnel, 0.0, 1.0);
+      float intensity = pow(rim, 5.0); // higher = thinner atmosphere
+
+      // Atmosphere color — blue with slight green tint
+      vec3 atmosphereColor = vec3(0.3, 0.6, 1.0);
+
+      gl_FragColor = vec4(atmosphereColor, intensity * 0.8);
+    }
+  `,
+                  blending: THREE.AdditiveBlending,
+                  side: THREE.FrontSide,
+                  transparent: true,
+                  depthWrite: false,
+            });
+
+            const atmosphereModel = new THREE.Mesh(atmosphereGeo, atmosphereMat);
+            atmosphereModel.position.copy(earthModel.position);
+
+            // Combine Earth Systems
+            const earthSystem = new THREE.Group();
+            earthSystem.add(earthModel);
+            earthSystem.add(atmosphereModel);
+            scene.add(earthSystem);
 
             // Add window resized handler
             window.addEventListener("resize", () => {
@@ -242,48 +286,46 @@
 
             sceneAnimationLoop();
 
-            const idleAnimation = createTimeline().add(earthModel.rotation, {});
+            const idleAnimation = createTimeline().add(earthSystem.rotation, {});
 
             let rotateProps = {
                   angle: 0,
             };
             const startAnimation = createTimeline()
-                  .add(earthModel.rotation, {
-                        y: [0, Math.PI * 4],
-                        ease: "linear",
+                  .add(earthSystem.position, {
+                        x: [-6, 1],
+                        y: [0, 2, -2],
+                        z: [0, -2, 1],
+                        duration: 5000,
+                        ease: eases.inOutElastic(1.2, 1.5),
                         autoplay: false,
-                        duration: 60000,
-                        loop: true,
                   })
-                  .add(
-                        earthModel.position,
-                        {
-                              x: [-6, 1],
-                              y: [0, 2, -0.5],
-                              z: [0, -2, 1],
-                              duration: 5000,
-                              ease: eases.inOutElastic(1.2, 1.5),
-                              autoplay: false,
-                        },
-                        "<<",
-                  )
                   .add(
                         rotateProps,
                         {
-                              angle: -Math.PI,
-                              duration: 5000,
+                              angle: Math.PI,
+                              duration: 10000,
                               ease: eases.inOutElastic(1.2, 1.5),
                               autoplay: false,
                               onUpdate: () => {
-                                    earthModel.position.x = Math.cos(rotateProps.angle);
-                                    earthModel.position.y = Math.sin(rotateProps.angle);
+                                    earthSystem.position.x = -Math.cos(rotateProps.angle) * 1.25;
+                                    earthSystem.position.z = Math.sin(rotateProps.angle) * 0.75;
                               },
                         },
                         "<<",
                   );
 
             setTimeout(() => {
-                  startAnimation.play();
+                  startAnimation.play().then(() => {
+                        animate(earthSystem.rotation, {
+                              y: [0, Math.PI * 4],
+                              ease: "linear",
+                              playbackEase: "inQuad",
+                              duration: 60000,
+                              loop: true,
+                              delay: 1000,
+                        });
+                  });
             }, 2000);
       }
 
