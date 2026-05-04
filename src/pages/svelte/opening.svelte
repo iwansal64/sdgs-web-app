@@ -9,7 +9,7 @@
                         "--radial-size": ["0", "100%"],
                         "--radial-blur-scale": ["0", "2%"],
                         delay: 1000,
-                        duration: 5000,
+                        duration: 4000,
                         ease: "outQuad",
                         autoplay: false,
                         onComplete: () => {

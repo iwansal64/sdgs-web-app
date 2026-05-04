@@ -5,6 +5,7 @@ import Homepage from "./svelte/homepage.svelte";
 import HomepageIsland from "./svelte/homepage-island.svelte";
 import Opening from "./svelte/opening.svelte";
 import SpaceScene from "./astro/space-scene.astro";
+import FontLoader from "./astro/font-loader.astro";
 ---
 
 <html lang="en">
@@ -14,6 +15,7 @@ import SpaceScene from "./astro/space-scene.astro";
             <link rel="icon" href="/favicon.ico" />
             <meta name="viewport" content="width=device-width" />
             <meta name="generator" content={Astro.generator} />
+            <FontLoader />
             <title>Astro</title>
       </head>
       <body>

@@ -286,47 +286,35 @@
 
             sceneAnimationLoop();
 
-            const idleAnimation = createTimeline().add(earthSystem.rotation, {});
-
             let rotateProps = {
-                  angle: 0,
+                  angleX: 0,
+                  angleY: 0,
+                  angleZ: 0,
+                  rotation: 0,
             };
-            const startAnimation = createTimeline()
-                  .add(earthSystem.position, {
-                        x: [-6, 1],
-                        y: [0, 2, -2],
-                        z: [0, -2, 1],
-                        duration: 5000,
+            createTimeline()
+                  .add(rotateProps, {
+                        angleX: [-4, 0],
+                        angleY: [0, Math.PI],
+                        angleZ: [0, Math.PI],
+                        rotation: [-Math.PI, 0],
+                        duration: 6000,
                         ease: eases.inOutElastic(1.2, 1.5),
-                        autoplay: false,
-                  })
-                  .add(
-                        rotateProps,
-                        {
-                              angle: Math.PI,
-                              duration: 10000,
-                              ease: eases.inOutElastic(1.2, 1.5),
-                              autoplay: false,
-                              onUpdate: () => {
-                                    earthSystem.position.x = -Math.cos(rotateProps.angle) * 1.25;
-                                    earthSystem.position.z = Math.sin(rotateProps.angle) * 0.75;
-                              },
+                        autoplay: true,
+                        onUpdate: () => {
+                              earthSystem.position.x = rotateProps.angleX;
+                              earthSystem.position.y = -Math.sin(rotateProps.angleY) * 1.25;
+                              earthSystem.position.z = -Math.sin(rotateProps.angleZ) * 2 + 0.75;
+                              earthSystem.rotation.y = rotateProps.rotation;
                         },
-                        "<<",
-                  );
-
-            setTimeout(() => {
-                  startAnimation.play().then(() => {
-                        animate(earthSystem.rotation, {
-                              y: [0, Math.PI * 4],
-                              ease: "linear",
-                              playbackEase: "inQuad",
-                              duration: 60000,
-                              loop: true,
-                              delay: 1000,
-                        });
+                  })
+                  .add(earthSystem.rotation, {
+                        y: [0, Math.PI * 4],
+                        ease: "linear",
+                        playbackEase: "inQuad",
+                        duration: 50000,
+                        loop: true,
                   });
-            }, 2000);
       }
 
       await setupSpaceScene();
