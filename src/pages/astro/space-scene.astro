@@ -1,5 +1,5 @@
 <script>
-      import { animate, createTimeline, eases } from "animejs";
+      import { animate, createTimeline, eases, linear } from "animejs";
       import * as THREE from "three";
       import { EffectComposer, GLTFLoader, OrbitControls, OutputPass, RenderPass, ShaderPass, UnrealBloomPass } from "three/examples/jsm/Addons.js";
 
@@ -40,6 +40,7 @@
             // Add Earth's Atmosphere
             const atmosphereGeo = new THREE.SphereGeometry(1.04, 64, 64);
             const atmosphereMat = new THREE.ShaderMaterial({
+                  uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib["lights"], { color: { value: new THREE.Color(0x00ff00) } }]),
                   vertexShader: `
     varying vec3 vNormal;
     varying vec3 vPosition;
@@ -55,14 +56,14 @@
     varying vec3 vPosition;
 
     void main() {
-      // Fresnel — stronger at edges, transparent at center
+      // Fresnel: stronger at edges, transparent at center
       vec3  viewDir = normalize(-vPosition);
       float fresnel = dot(vNormal, viewDir);
       float rim     = 1.0 - clamp(fresnel, 0.0, 1.0);
-      float intensity = pow(rim, 5.0); // higher = thinner atmosphere
+      float intensity = pow(rim, 6.0); // higher means thinner atmosphere
 
-      // Atmosphere color — blue with slight green tint
-      vec3 atmosphereColor = vec3(0.3, 0.6, 1.0);
+      // Atmosphere color
+      vec3 atmosphereColor = vec3(0, 0.3, 0.9);
 
       gl_FragColor = vec4(atmosphereColor, intensity * 0.8);
     }
@@ -103,10 +104,10 @@
                   transparent: true,
             });
             const sunModel = new THREE.Mesh(sunGeo, sunMat);
-            sunModel.position.set(-0.85, 2.7, -10);
+            sunModel.position.set(6, -2.25, -10);
 
             // Create Sun Light
-            const sunLight = new THREE.PointLight(0xffffff, 10);
+            const sunLight = new THREE.PointLight(0xffffff, 10, 100);
             sunLight.position.copy(sunModel.position);
 
             // Create Sun Lens Flare
@@ -165,6 +166,7 @@
             sunModel.layers.enable(BLOOM_LAYER);
             glowSprite.layers.enable(BLOOM_LAYER);
             earthModel.layers.disable(BLOOM_LAYER);
+            atmosphereModel.layers.enable(BLOOM_LAYER);
 
             // Hide Non-bloom Objects
             const darkMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
@@ -238,10 +240,10 @@
             }
 
             function createStars(count: number) {
-                  const positions = new Float32Array(count * 3); // x, y, z per star
+                  const positions = new Float32Array(count * 3); // Holds star positions
 
                   for (let i = 0; i < count * 3; i++) {
-                        positions[i] = (Math.random() - 0.5) * 50; // spread across 2000 units
+                        positions[i] = (Math.random() - 0.5) * 20;
                   }
 
                   const geo = new THREE.BufferGeometry();
@@ -251,7 +253,7 @@
 
                   if (!starTexture) return;
                   const mat = new THREE.PointsMaterial({
-                        size: Math.random() * 0.25 + 0.1,
+                        size: Math.random() * 0.1 + 0.05,
                         map: createStarTexture(), // ← round texture
                         transparent: true,
                         blending: THREE.AdditiveBlending,
@@ -262,7 +264,7 @@
                   return new THREE.Points(geo, mat);
             }
 
-            const stars = createStars(200);
+            const stars = createStars(300);
             if (stars) {
                   stars.layers.enable(BLOOM_LAYER);
                   scene.add(stars);
@@ -287,31 +289,45 @@
             sceneAnimationLoop();
 
             let rotateProps = {
-                  angleX: 0,
-                  angleY: 0,
-                  angleZ: 0,
-                  rotation: 0,
+                  positionX: 0,
+                  positionY: 0,
+                  positionZ: 0,
+                  rotation: -Math.PI,
             };
-            createTimeline()
-                  .add(rotateProps, {
-                        angleX: [-4, 0],
-                        angleY: [0, Math.PI],
-                        angleZ: [0, Math.PI],
-                        rotation: [-Math.PI, 0],
-                        duration: 6000,
-                        ease: eases.inOutElastic(1.2, 1.5),
-                        autoplay: true,
-                        onUpdate: () => {
-                              earthSystem.position.x = rotateProps.angleX;
-                              earthSystem.position.y = -Math.sin(rotateProps.angleY) * 1.25;
-                              earthSystem.position.z = -Math.sin(rotateProps.angleZ) * 2 + 0.75;
-                              earthSystem.rotation.y = rotateProps.rotation;
+            createTimeline({
+                  onUpdate: () => {
+                        earthSystem.position.x = (Math.sin(rotateProps.positionX) * 24) / Math.sqrt(3) - 12;
+                        earthSystem.position.y = Math.sin(rotateProps.positionY);
+                        earthSystem.position.z = -Math.sin(rotateProps.positionZ) * 8 - 7;
+                        earthSystem.rotation.y = rotateProps.rotation;
+                  },
+            })
+                  .add(
+                        rotateProps,
+                        {
+                              positionX: [0, (4 / 6) * Math.PI],
+                              positionY: [0, Math.PI],
+                              positionZ: [0, (6 / 4) * Math.PI],
+                              duration: 14000,
+                              delay: 0,
+                              ease: eases.outElastic(0.001, 2),
+                              autoplay: true,
                         },
-                  })
+                        1000,
+                  )
+                  .add(
+                        rotateProps,
+                        {
+                              rotation: [-Math.PI, 0],
+                              autoplay: true,
+                              duration: 14000,
+                              ease: "linear",
+                        },
+                        "<<",
+                  )
                   .add(earthSystem.rotation, {
                         y: [0, Math.PI * 4],
                         ease: "linear",
-                        playbackEase: "inQuad",
                         duration: 50000,
                         loop: true,
                   });
