@@ -1,0 +1,20 @@
+---
+import Galaxy from '../../component/Galaxy.tsx';
+import Page2 from '../svelte/page-2.svelte';
+import "../../styles/global.css";
+
+---
+
+<html>
+  <body>
+    <div style="position: relative; width: 100%; height: 100vh;">
+      <!-- client:only="react" skips SSR, runs fully in browser -->
+    <Galaxy client:only="react"  />
+
+      <!-- Your page content on top -->
+      <div style="position: relative; z-index: 10;">
+        <h1>test</h1>
+      </div>
+    </div>
+  </body>
+</html>
