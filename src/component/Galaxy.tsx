@@ -197,7 +197,7 @@ export default function Galaxy({
   disableAnimation = false,
   speed = 1.0,
   mouseInteraction = true,
-  glowIntensity = 0.3,
+  glowIntensity = 0.1,
   saturation = 0.0,
   mouseRepulsion = true,
   repulsionStrength = 2,
@@ -210,8 +210,8 @@ export default function Galaxy({
   const ctnDom = useRef<HTMLDivElement>(null);
   const targetMousePos = useRef({ x: 0.5, y: 0.5 });
   const smoothMousePos = useRef({ x: 0.5, y: 0.5 });
-  const targetMouseActive = useRef(0.0);
-  const smoothMouseActive = useRef(0.0);
+  const targetMouseActive = useRef(1.0);
+  const smoothMouseActive = useRef(2.0);
 
   useEffect(() => {
     if (!ctnDom.current) return;
@@ -282,8 +282,8 @@ export default function Galaxy({
     function update(t: number) {
       animateId = requestAnimationFrame(update);
       if (!disableAnimation) {
-        program.uniforms.uTime.value = t * 0.001;
-        program.uniforms.uStarSpeed.value = (t * 0.001 * starSpeed) / 10.0;
+        program.uniforms.uTime.value = t * 0.0001;
+        program.uniforms.uStarSpeed.value = (t * 0.0001 * starSpeed) / 10.0;
       }
 
       const lerpFactor = 0.05;

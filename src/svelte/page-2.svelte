@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +6,7 @@
 <title>SDG Report 2025</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -33,7 +33,6 @@
     overflow-x: hidden;
   }
 
-  /* HERO */
   .hero {
     position: relative;
     min-height: 100vh;
@@ -142,7 +141,6 @@
   }
   .btn-ghost:hover { border-color: var(--text-white); background: rgba(255,255,255,0.05); }
 
-  /* big decorative year */
   .hero-year {
     position: absolute;
     right: -20px;
@@ -157,7 +155,6 @@
     line-height: 1;
   }
 
-  /* scroll cue */
   .scroll-cue {
     position: absolute;
     bottom: 36px;
@@ -177,7 +174,7 @@
     background: var(--text-muted);
   }
 
-  /* STATS STRIP */
+
   .stats-strip {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -241,7 +238,7 @@
     max-width: 260px;
   }
 
-  /* SECTION HEADER */
+
   .section {
     padding: 100px 60px;
   }
@@ -273,7 +270,7 @@
     margin-bottom: 60px;
   }
 
-  /* CARD GRID */
+
   .card-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -346,7 +343,6 @@
     color: var(--text-muted);
   }
 
-  /* VISUAL BARS */
   .bar-section {
     padding: 80px 60px;
     background: rgba(255,255,255,0.015);
@@ -455,7 +451,7 @@
     vertical-align: middle;
   }
 
-  /* FOOTER */
+
   .footer {
     padding: 48px 60px;
     border-top: 1px solid var(--border);
@@ -485,13 +481,13 @@
     background: var(--border);
   }
 
-  /* ANIMATIONS */
+
   @keyframes fadeSlideUp {
     from { opacity: 0; transform: translateY(24px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* RESPONSIVE */
+
   @media (max-width: 768px) {
     .hero { padding: 60px 24px; }
     .stats-strip { grid-template-columns: 1fr; }
@@ -506,7 +502,7 @@
 </head>
 <body>
 
-<!-- ═══ HERO ═══ -->
+
 <section class="hero">
   <div class="hero-badge">
     <div class="sdg-wheel"></div>
@@ -536,7 +532,7 @@
   </div>
 </section>
 
-<!-- ═══ STAT STRIP ═══ -->
+
 <div class="stats-strip" id="main">
   <div class="stat-cell gold">
     <div class="stat-sdg-label">SDG 12 · Responsible Consumption</div>
@@ -555,7 +551,7 @@
   </div>
 </div>
 
-<!-- ═══ MAIN CARDS ═══ -->
+
 <section class="section">
   <div class="section-eyebrow">Key Findings</div>
   <h2 class="section-title">Three Dimensions<br>of Global Change</h2>
@@ -591,7 +587,7 @@
     <div class="card crimson">
       <div class="card-number">8</div>
       <div class="card-tag">SDG 8 · Child Labour</div>
-      <div class="card-metric">−20M</div>
+      <div class="card-metric">-20M</div>
       <div class="card-title">Progress Since 2020</div>
       <div class="card-body">
         138 million children in child labour — a sobering figure, yet over 20 million fewer than in 2020,
@@ -602,7 +598,7 @@
   </div>
 </section>
 
-<!-- ═══ BAR COMPARISON ═══ -->
+
 <section class="bar-section" id="bars">
   <h2 class="bar-title">Coverage & Scale at a Glance</h2>
 
@@ -655,7 +651,7 @@
   </div>
 </section>
 
-<!-- ═══ FOOD FLOW ═══ -->
+
 <section class="flow-section">
   <div class="section-eyebrow">SDG 12 Deep Dive</div>
   <h2 class="section-title">Where Food<br>Is Lost</h2>
@@ -715,7 +711,7 @@
   </div>
 </section>
 
-<!-- ═══ FOOTER ═══ -->
+
 <footer class="footer">
   <div class="footer-left">
     <div style="font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1px; color:var(--text-white); margin-bottom:6px;">THE SDG REPORT 2025</div>
@@ -728,7 +724,7 @@
 </footer>
 
 <script>
-  // Animate bars on scroll
+
   const fills = document.querySelectorAll('.bar-fill');
   const observer = new IntersectionObserver(entries => {
     entries.forEach(e => {
