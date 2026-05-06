@@ -81,6 +81,7 @@
             const earthSystem = new THREE.Group();
             earthSystem.add(earthModel);
             earthSystem.add(atmosphereModel);
+            earthSystem.position.set(0, 0, -5);
             scene.add(earthSystem);
 
             // Add window resized handler
@@ -243,7 +244,7 @@
                   const positions = new Float32Array(count * 3); // Holds star positions
 
                   for (let i = 0; i < count * 3; i++) {
-                        positions[i] = (Math.random() - 0.5) * 20;
+                        positions[i] = i % 3 == 2 ? (Math.random() + 0.5) * -20 : (Math.random() - 0.5) * 20;
                   }
 
                   const geo = new THREE.BufferGeometry();
@@ -296,41 +297,42 @@
             };
             createTimeline({
                   onUpdate: () => {
-                        earthSystem.position.x = (Math.sin(rotateProps.positionX) * 24) / Math.sqrt(3) - 12;
-                        earthSystem.position.y = Math.sin(rotateProps.positionY);
-                        earthSystem.position.z = -Math.sin(rotateProps.positionZ) * 8 - 7;
-                        earthSystem.rotation.y = rotateProps.rotation;
+                        camera.position.x = -Math.cos(rotateProps.positionX) * 10;
+                        camera.position.y = 0;
+                        camera.position.z = Math.sin(rotateProps.positionZ) * 5 + 4;
+                        camera.rotation.y = rotateProps.rotation;
                   },
             })
                   .add(
                         rotateProps,
                         {
-                              positionX: [0, (4 / 6) * Math.PI],
-                              positionY: [0, Math.PI],
-                              positionZ: [0, (6 / 4) * Math.PI],
-                              duration: 14000,
+                              positionX: [0, Math.PI / 2],
+                              positionY: [0, Math.PI / 2],
+                              positionZ: [0, (4 / 3) * Math.PI],
+                              duration: 6000,
                               delay: 0,
-                              ease: eases.outElastic(0.001, 2),
                               autoplay: true,
+                              ease: "outQuint",
                         },
                         1000,
                   )
                   .add(
                         rotateProps,
                         {
-                              rotation: [-Math.PI, 0],
+                              rotation: [-Math.PI / 2, 0],
+                              duration: 6000,
                               autoplay: true,
-                              duration: 14000,
-                              ease: "linear",
+                              ease: "outBack",
                         },
                         "<<",
-                  )
-                  .add(earthSystem.rotation, {
-                        y: [0, Math.PI * 4],
-                        ease: "linear",
-                        duration: 50000,
-                        loop: true,
-                  });
+                  );
+
+            animate(earthSystem.rotation, {
+                  y: [0, Math.PI * 4],
+                  ease: "linear",
+                  duration: 50000,
+                  loop: true,
+            });
       }
 
       await setupSpaceScene();
